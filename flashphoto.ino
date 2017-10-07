@@ -1,30 +1,41 @@
-//#include "CameraControl.h"
-#include "Firmata.h"
-#define FIRMATA_FIRMWARE_MAJOR_VERSION 0
-#define FIRMATA_FIRMWARE_MINOR_VERSION 1
+volatile boolean triggered = false;
 
-void callback_string_data(char *data)
+ISR (ANALOG_COMP_vect)
 {
-  String _data(data);
-  _data = "<" + _data + ">";
-  Firmata.sendString(_data.c_str());
+   // clk / 1
+   // CTC mode, OCR1A configured as top
+   TCCR1B = bit(CS10) | bit(WGM12);
+   ACSR = 0;
 }
 
-void callback_sysex_start(byte command, byte argc, byte *argv)
+void arm()
 {
-  Firmata.sendSysex(command, argc, argv);
+  ADCSRB = 0;           // (Disable) ACME: Analog Comparator Multiplexer Enable
+  ACSR =  bit (ACI)     // (Clear) Analog Comparator Interrupt Flag
+        | bit (ACIE)    // Analog Comparator Interrupt Enable
+        | bit (ACIS1)
+        | bit (ACIS0);
+  TCCR1B = 0;
+   // set OC1A to high on CTC match
+   TCCR1A = bit(COM1A1) | bit(COM1A0); 
+   TCNT1 = 0;
+   OCR1A = 200;
 }
 
-void setup()
+void setup ()
 {
-  Firmata.setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
-  Firmata.attach(STRING_DATA, callback_string_data);
-  Firmata.attach(START_SYSEX, callback_sysex_start);
-  Firmata.begin(57600);
-}
+  Serial.begin (115200);
+  Serial.println ("Started.");
+ }
 
-void loop()
+void loop ()
 {
-  while (Firmata.available())
-    Firmata.processInput();
+  if (triggered)
+  {
+      unsigned long time = millis();
+      Serial.print(time);
+      Serial.println(" - Triggered!"); 
+      triggered = false;
+      ACSR = bit (ACI) | bit (ACIE) | bit (ACIS1) | bit(ACIS0);
+  }
 }
