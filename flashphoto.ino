@@ -3,96 +3,92 @@
 
 Control control;
 Parser parser(control);
-volatile bool triggered = false;
-volatile bool comp_b = false;
-volatile bool comp_a = false;
-
-#define PRINT_16BREG(reg, name, page) { \
-    unsigned short value = reg; \
-    Serial.println(F("* " #reg "(H/L) - " name " (p" #page "):")); \
-    Serial.print(F("  " #reg "[15:8]: ")); \
-    Serial.println(value >> 8, BIN); \
-    Serial.print(F("  " #reg "[7:0]:  ")); \
-    Serial.println(value & 0xff, BIN); \
-    Serial.print(F("  16-bit value: 0x")); \
-    Serial.print(value, HEX); \
-    Serial.print(F(" / ")); \
-    Serial.print(value, DEC); \
-    Serial.print(F(" / 0")); \
-    Serial.print(value, OCT); \
-    Serial.print(F(" / 0b")); \
-    Serial.println(value, BIN); \
-    Serial.println(); \
-}
+volatile uint16_t triggered = 0;
+volatile uint16_t exp_start = 0;
+volatile uint16_t exp_stop = 0;
 
 ISR (ANALOG_COMP_vect)
 {
     if (!control.armed) return;
-    TCNT1 = 0;
+    cli();
     ACSR = bit(ACD);
-    triggered = true;
+    // enable int on match with OCR1B
+    triggered = TCNT1;
+    OCR1A = MAX_EXPOSURE_DURATION;
+    OCR1B = control.camera.exposure_delay;
     TCCR1A = bit(COM1B1) | bit(COM1B0);
-    // turn timer on, clk / 64
     TCCR1B = bit(WGM12) | bit(CS10) | bit(CS11);
     TIMSK1 = bit(OCIE1B);
-    //control.disarm();
-    // triggered
+    sei();
 }
 
 ISR(TIMER1_COMPB_vect)
 {
-    // we just exposed the camera, configure pin to turn off on next MATCH
-    // configure next match at 100ms
-    OCR1B = 10000 + 25000;
-    TCCR1A = bit(COM1B1);
-    TIMSK1 = bit(OCIE1A);
-    comp_b = true;
-}
-
-ISR(TIMER1_COMPA_vect)
-{
-    // turn off timer
-    TIMSK1 = 0;
-    TCCR1B = 0;
-    TCCR1A = 0;
-    comp_a = true;
+    cli();
+    if (TCCR1A & bit(COM1B0))
+    {
+      // we just exposed the camera, configure pin to turn off on next MATCH
+      // configure next match at 100ms
+      TCCR1B = 0;
+      TCCR1A = bit(COM1B1);
+      exp_start = TCNT1;
+      OCR1B = control.camera.exposure_duration;
+      TCNT1 = 1;
+      TCCR1B = bit(WGM12) | bit(CS10) | bit(CS11);
+    } else
+    {
+      // we just finished our exposure, wrap it up
+      exp_stop = TCNT1;
+      TIMSK1 = 0;
+      TCCR1B = 0;
+      TCCR1A = 0;
+    }
+    sei();
 }
 
 void setup ()
 {
-    Serial.begin(9600);
-    TCCR0A = 0;
-    TCCR1A = 0;
+    Serial.begin(115200);
     control.setup();
 }
 
+void print_timers(uint8_t tcnt)
+{
+    Serial.print("[TCNT1 0x");
+    Serial.print(tcnt, DEC);
+    Serial.print("] [OCR1A 0x");
+    Serial.print(OCR1A, DEC);
+    Serial.print("] [OCR1B 0x");
+    Serial.print(OCR1B, DEC);
+    Serial.print("] [TCCR1A 0x");
+    Serial.print(TCCR1A, BIN);
+    Serial.print("] [TCCR1B 0x");
+    Serial.print(TCCR1B, BIN);
+    Serial.print("]\r\n");
+}
+
+
 void loop ()
 {
-  /*
-  if(control.armed)
-  {
-    uint16_t tcnt = TCNT1;
-    PRINT_16BREG(TCNT1, "Timer/Counter1", 135);
-    PRINT_16BREG(OCR1A, "Output Compare Register 1 A", 136);
-    PRINT_16BREG(OCR1B, "Output Compare Register 1 A", 137);
-    _delay_ms(2000);
-  }
-  */
   if(triggered)
   {
+    control.laser.off();
+    Serial.print("T: ");
+    print_timers(triggered);
+    triggered = 0;
+  }
+  if(exp_start)
+  {
+    Serial.print("O: ");
+    print_timers(exp_start);
+    exp_start = 0;
+  }
+  if(exp_stop)
+  {
+    Serial.print("o: ");
     control.disarm();
-    Serial.print('T');
-    triggered = false;
-  }
-  if(comp_a)
-  {
-    Serial.print('A');
-    comp_a = false;
-  }
-  if(comp_b)
-  {
-    Serial.print('B');
-    comp_b = false;
+    print_timers(exp_stop);
+    exp_stop = 0;
   }
   if(Serial.available())
   {

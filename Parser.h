@@ -31,8 +31,21 @@ public:
           control.laser.toggle();
           break;
         case 'S':
-          control.exposure_delay = val;
+          // sleep time
+          control.camera.exposure_delay = val;
           val = 0;
+          break;
+        case 'F':
+          // fire time
+          control.camera.exposure_duration = val;
+          val = 0;
+          break;
+        case 'P':
+          Serial.print("exp: [");
+          Serial.print(control.camera.exposure_delay / 250000.0, 4);
+          Serial.print(", ");
+          Serial.print(control.camera.exposure_duration / 250000.0, 4);
+          Serial.println("]");
           break;
     }
   }
