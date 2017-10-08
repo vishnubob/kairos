@@ -206,7 +206,8 @@ pm = PlungerManager(tp)
 plunger = pm.plungers[0]
 plunger.initialize()
 speed = 12
+plunger.speed = 4
 while 1:
-    plunger.speed = speed
-    speed -= 1
+    #plunger.speed = speed
+    #speed -= 1
     cycle(plunger)

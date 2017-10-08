@@ -1,4 +1,5 @@
 volatile boolean triggered = false;
+#define laser 5
 
 ISR (ANALOG_COMP_vect)
 {
@@ -12,7 +13,7 @@ ISR (ANALOG_COMP_vect)
 void arm()
 {
     ADCSRB = 0;
-    ACSR =  bit(ACI) | bit(ACIE) | bit(ACIS1);
+    ACSR =  bit(ACI) | bit(ACIE) | bit(ACIS1) | bit(ACIS0);
     //TCCR1B = 0;
     // set OC1A to high on CTC match
     //TCCR1A = bit(COM1A1) | bit(COM1A0); 
@@ -22,8 +23,11 @@ void arm()
 
 void setup ()
 {
-    Serial.begin (115200);
-    Serial.println ("Started.");
+    pinMode(laser, OUTPUT);
+    digitalWrite(laser, HIGH);
+    Serial.begin(115200);
+    Serial.println("Started.");
+    arm();
 }
 
 void loop ()

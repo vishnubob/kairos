@@ -1,2 +1,5 @@
 tarpit
 .*.sw?
+*.hex
+.python-version
+.sconsign.dblite
