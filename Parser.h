@@ -31,9 +31,11 @@ public:
           control.laser.toggle();
           break;
         case 'S':
-          exposure_delay = v;
-          v = 0;
+          control.exposure_delay = val;
+          val = 0;
           break;
     }
   }
-}
+
+Control &control;
+};

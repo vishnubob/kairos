@@ -3,7 +3,7 @@
 import serial
 import time
 
-DEFAULT_PORT = '/dev/ttyUSB0'
+DEFAULT_PORT = '/dev/ttyUSB1'
 
 def reset_arduino(port):
     arduino = serial.Serial(port, 9600)

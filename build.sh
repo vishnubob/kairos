@@ -10,7 +10,6 @@ mkdir -p ${build_dir}
 	-hardware /usr/share/arduino/hardware \
 	-tools /usr/share/arduino/hardware/tools \
 	-tools /usr/share/arduino/tools-builder \
-	-libraries $(pwd)/libraries \
 	-fqbn arduino:avr:diecimila:cpu=atmega328 \
 	-verbose \
 	-build-path ${build_dir} \
