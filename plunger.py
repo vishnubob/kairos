@@ -1,8 +1,14 @@
 import serial
+import time
 
-VALVE_NONE = 0
-VALVE_LEFT = 1
-VALVE_RIGHT = 2
+VALVE_NONE = None
+VALVE_LEFT = "left"
+VALVE_RIGHT = "right"
+
+VALVE_INPUT = "input"
+VALVE_OUTPUT = "output"
+VALVE_BYPASS = "bypass"
+VALVE_EXTRA = "extra"
 
 class PlungerManager(object):
     MaxPlungers = 16
@@ -19,7 +25,7 @@ class PlungerManager(object):
         plungers = []
         for addr in range(self.MaxPlungers):
             plunger = Plunger(addr, self.transport)
-            if plunger.get_firmware():
+            if plunger.firmware:
                 plungers.append(plunger)
         self.transport.timeout = 1
         return plungers
@@ -39,16 +45,39 @@ class PlungerTransport(object):
     timeout = property(get_timeout, set_timeout)
 
     def send(self, command, callback):
-        block = command + '\r\n'
+        block = command + 'R\r\n'
         block = block.encode(self.encoding)
         self.io.write(block)
         resp = self.io.readline()
         resp = resp.decode(self.encoding)
         callback(resp)
+        print("->", block.strip(), "<-", resp.strip())
+
+class PlungerError(Exception):
+    ErrorCodes = {
+        0x00: "Error Free",
+        0x01: "Initialization error",
+        0x02: "Invalid command",
+        0x03: "Invalid operand",
+        0x04: "Invalid command sequence",
+        0x05: "Fluid detection",
+        0x06: "EEPROM failure",
+        0x07: "Device not initialized",
+        0x09: "Plunger overload",
+        0x10: "Valve overload",
+        0x11: "Plunger move not allowed",
+        0x15: "Command overflow",
+    }
+
+    def __init__(self, error_code):
+        self.error_code = error_code
+
+    def __str__(self):
+        return self.ErrorCodes[self.error_code]
 
 class Plunger(object):
-    class PlungerError(Exception):
-        pass
+    STATUS_PUMP_ERROR = 0x0F
+    STATUS_PUMP_READY = 0x20
 
     def __init__(self, addr=0, transport=None):
         self.addr = addr
@@ -57,81 +86,127 @@ class Plunger(object):
         self.cache = {}
         self._status = None
 
-    @property
-    def get_status(self):
-        return self._status
-
-    def send(self, cmd, callback=None):
-        def wrap_callback(plunger, callback):
+    def send(self, cmd, callback=None, key=None, wait=True):
+        def wrap_callback(plunger, callback, key):
             def wrapper(resp):
                 if not resp:
                     value = ''
                     status = None
+                    ready = False
+                    error = 0
                 else:
                     (status, value) = self.answer_block(resp)
-                plunger._status = status
+                    status = ord(status)
+                    ready = bool(status & self.STATUS_PUMP_READY)
+                    error = (status & self.STATUS_PUMP_ERROR)
+                self.cache["status"] = status
+                self.cache["ready"] = ready
+                self.cache["error"] = error
                 if callback:
-                    callback(value)
+                    value = callback(value)
+                if key:
+                    self.cache[key] = value
+                if error:
+                    raise PlungerError(error)
             return wrapper
         cmd = self.command_block(cmd)
-        callback = wrap_callback(self, callback)
-        return self.transport.send(cmd, callback=callback)
-
-    def get_firmware(self):
-        if "firmware" not in self.cache:
-            self.send('&', callback=self.set_firmware)
-        return self.cache['_firmware']
-    def set_firmware(self, value):
-        self.cache["_firmware"] = value
-    firmware = property(get_firmware, set_firmware)
+        callback = wrap_callback(self, callback, key)
+        self.transport.send(cmd, callback=callback)
+        if wait:
+            self.wait()
 
     def answer_block(self, response):
-        if response[:2] != '/0':
-            raise PlungerError('parse')
-        if response[-3:] != '\x03\r\n':
-            raise PlungerError('parse')
-        status = response[2]
-        datablock = response[3:-3]
+        slash = response.index('/0')
+        if slash == '-1':
+            return (None, None)
+        terminal = response.index('\x03\r\n')
+        if terminal == '-1':
+            return (None, None)
+        response = response[slash+2:terminal]
+        status = response[0]
+        datablock = response[1:]
         return (status, datablock)
-
+    
     def command_block(self, data_block):
         command_block = '/%X%s' 
         command_block %= (self.addr, data_block)
         return command_block
 
-    def initialize(self, full_force=True, valve=VALVE_RIGHT):
+    def wait(self):
+        while not self.ready:
+            time.sleep(1)
+
+    def initialize(self, full_force=False, input_valve=VALVE_RIGHT):
         command_map = {
             VALVE_NONE: 'W%d',
             VALVE_RIGHT: 'Z%d',
             VALVE_LEFT: 'Y%d',
         }
         n = 0 if full_force else 1
-        cstr = command_map[valve] % n
-        return cstr
+        cstr = command_map[input_valve] % n
+        self.send(cstr)
     
+    @property
+    def firmware(self):
+        if "firmware" not in self.cache:
+            self.send('&', key="firmware", wait=False)
+        return self.cache['firmware']
+
+    @property
+    def ready(self):
+        self.send('Q', wait=False)
+        return self.cache["ready"]
+
+    @property
+    def status(self):
+        self.send('Q', wait=False)
+        return self.cache["status"]
+
+    def get_speed(self):
+        return self.cache.get("speed", 11)
+    def set_speed(self, value):
+        self.cache["speed"] = value
+        cmd = "S%d" % value
+        self.send(cmd)
+    speed = property(get_speed, set_speed)
+
+    def get_position(self):
+        self.send('?4', key="position", wait=False, callback=int)
+        return self.cache["position"]
+    def set_position(self, value):
+        cmd = "A%d" % value
+        self.send(cmd)
+    position = property(get_position, set_position)
+
     def get_valve(self):
         return self._valve
-    def set_valve(self, value):
-        if value == VALVE_INPUT:
-            self.emit('I')
-            self._valve = VAVLE_INPUT
-        elif value == VALVE_OUTPUT:
-            self.emit('O')
-            self._valve = VAVLE_OUTPUT
-        elif value == VALVE_BYPASS:
-            self.emit('B')
-            self._valve = VAVLE_OUTPUT
-        elif value == VALVE_EXTRA:
-            self.emit('B')
-            self._valve = VAVLE_OUTPUT
+    def set_valve(self, port):
+        if port == VALVE_INPUT:
+            self.send('I')
+        elif port == VALVE_OUTPUT:
+            self.send('O')
+        elif port == VALVE_BYPASS:
+            self.send('B')
+        elif port == VALVE_EXTRA:
+            self.send('B')
         else:
             raise ValueError(value)
     valve = property(get_valve, set_valve)
 
 
+def cycle(plunger):
+    plunger.valve = "input"
+    plunger.position = 3000
+    plunger.valve = "output"
+    plunger.position = 0
+
 port = "/dev/ttyUSB0"
 tp = PlungerTransport(port)
 pm = PlungerManager(tp)
-print(pm.plungers)
-print (pm[0].firmware)
-print (pm[0].status)
+plunger = pm.plungers[0]
+plunger.initialize()
+speed = 12
+while 1:
+    plunger.speed = speed
+    speed -= 1
+    cycle(plunger)
