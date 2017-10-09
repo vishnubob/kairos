@@ -125,12 +125,25 @@ public:
   void setup()
   {
     armed = false;
+    dryrun = false;
     cli();
     camera.setup();
     laser.setup();
     ldr.setup();
     sei();
   }
+
+  void arm_dryrun (void)
+  {
+    cli();
+    if (armed) return;
+    laser.on();
+    ldr.arm();
+    sei();
+    _delay_ms(500);
+    armed = dryrun = true;
+  }
+
 
   void arm (void)
   {
@@ -142,6 +155,7 @@ public:
     sei();
     _delay_ms(500);
     armed = true;
+    dryrun = false;
   }
 
   void disarm (void)
@@ -152,10 +166,12 @@ public:
     camera.disarm();
     laser.off();
     armed = false;
+    dryrun = false;
     sei();
   }
 
   bool volatile armed;
+  bool volatile dryrun;
   LDR ldr;
   Laser laser;
   Camera camera;

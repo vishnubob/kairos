@@ -1,5 +1,5 @@
-import serial
 import time
+from . transport import SerialTransport
 
 VALVE_NONE = None
 VALVE_LEFT = "left"
@@ -17,6 +17,9 @@ class PlungerManager(object):
         self.transport = transport
         self.plungers = self.scan()
 
+    def __iter__(self):
+        return iter(self.plungers)
+
     def __getitem__(self, index):
         return self.plungers[index]
 
@@ -30,28 +33,8 @@ class PlungerManager(object):
         self.transport.timeout = 1
         return plungers
 
-class PlungerTransport(object):
-    Encoding = "latin-1"
-
-    def __init__(self, port, baud=9600, timeout=1, encoding=Encoding):
-        self.port = port
-        self.io = serial.Serial(port, baudrate=baud, timeout=timeout)
-        self.encoding = encoding
-
-    def get_timeout(self):
-        return self.io.timeout
-    def set_timeout(self, value):
-        self.io.timeout = value
-    timeout = property(get_timeout, set_timeout)
-
-    def send(self, command, callback):
-        block = command + 'R\r\n'
-        block = block.encode(self.encoding)
-        self.io.write(block)
-        resp = self.io.readline()
-        resp = resp.decode(self.encoding)
-        callback(resp)
-        print("->", block.strip(), "<-", resp.strip())
+class PlungerTransport(SerialTransport):
+    DefaultBaudrate = 9600
 
 class PlungerError(Exception):
     ErrorCodes = {
@@ -75,7 +58,7 @@ class PlungerError(Exception):
     def __str__(self):
         return self.ErrorCodes[self.error_code]
 
-class Plunger(object):
+class PlungerBase(object):
     STATUS_PUMP_ERROR = 0x0F
     STATUS_PUMP_READY = 0x20
 
@@ -188,28 +171,27 @@ class Plunger(object):
         elif port == VALVE_BYPASS:
             self.send('B')
         elif port == VALVE_EXTRA:
-            self.send('B')
+            self.send('E')
         else:
             raise ValueError(value)
     valve = property(get_valve, set_valve)
 
+class Plunger(PlungerBase):
+    def fill(self, position=3000, speed=1):
+        plunger.speed = speed
+        plunger.valve = "input"
+        plunger.position = position
 
-def cycle(plunger):
-    plunger.speed = 1
-    plunger.valve = "input"
-    plunger.position = 3000
-    plunger.speed = 20
-    plunger.valve = "output"
-    plunger.position = 0
+    def flush(self, position=0, speed=20):
+        plunger.speed = speed
+        plunger.valve = "output"
+        plunger.position = position
 
-port = "./pumps"
-tp = PlungerTransport(port)
-pm = PlungerManager(tp)
-plunger = pm.plungers[0]
-plunger.initialize()
-speed = 12
-plunger.speed = 4
-while 1:
-    #plunger.speed = speed
-    #speed -= 1
-    cycle(plunger)
+    def cycle(self, fill_position=3000, fill_speed=1, flush_position=0, flush_speed=20):
+        self.fill(position=fill_position, speed=fill_speed)
+        self.flush(position=flush_position, speed=flush_speed)
+
+def build_manager(port):
+    tp = PlungerTransport(port)
+    pm = PlungerManager(tp)
+    return pm

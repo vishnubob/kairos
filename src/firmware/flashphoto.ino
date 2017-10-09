@@ -3,17 +3,18 @@
 
 Control control;
 Parser parser(control);
-volatile uint16_t triggered = 0;
+volatile bool triggered = false;
 volatile uint16_t exp_start = 0;
 volatile uint16_t exp_stop = 0;
 
 ISR (ANALOG_COMP_vect)
 {
+    triggered = true;
     if (!control.armed) return;
-    cli();
     ACSR = bit(ACD);
     // enable int on match with OCR1B
-    triggered = TCNT1;
+    if (!control.dryrun) return;
+    cli();
     OCR1A = MAX_EXPOSURE_DURATION;
     OCR1B = control.camera.exposure_delay;
     TCCR1A = bit(COM1B1) | bit(COM1B0);
@@ -75,20 +76,20 @@ void loop ()
   if(triggered)
   {
     control.laser.off();
-    Serial.print("T: ");
-    print_timers(triggered);
+    Serial.print("TRG\r\n");
+    //print_timers(triggered);
     triggered = 0;
   }
   if(exp_start)
   {
-    Serial.print("O: ");
-    print_timers(exp_start);
+    //Serial.print("O: ");
+    //print_timers(exp_start);
     exp_start = 0;
   }
   if(exp_stop)
   {
-    Serial.print("o: ");
-    control.disarm();
+    //Serial.print("o: ");
+    //control.disarm();
     print_timers(exp_stop);
     exp_stop = 0;
   }
