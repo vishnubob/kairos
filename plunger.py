@@ -200,7 +200,7 @@ def cycle(plunger):
     plunger.valve = "output"
     plunger.position = 0
 
-port = "/dev/ttyUSB0"
+port = "./pumps"
 tp = PlungerTransport(port)
 pm = PlungerManager(tp)
 plunger = pm.plungers[0]
