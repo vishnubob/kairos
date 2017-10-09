@@ -35,6 +35,7 @@ ISR(TIMER1_COMPB_vect)
       OCR1B = control.camera.exposure_duration;
       TCNT1 = 1;
       TCCR1B = bit(WGM12) | bit(CS10) | bit(CS11);
+      //digitalWrite(PIN_FLASH_FIRE, HIGH);
     } else
     {
       // we just finished our exposure, wrap it up
@@ -42,6 +43,7 @@ ISR(TIMER1_COMPB_vect)
       TIMSK1 = 0;
       TCCR1B = 0;
       TCCR1A = 0;
+      //digitalWrite(PIN_FLASH_FIRE, LOW);
     }
     sei();
 }

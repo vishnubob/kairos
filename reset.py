@@ -3,7 +3,7 @@
 import serial
 import time
 
-DEFAULT_PORT = './arduino'
+DEFAULT_PORT = './mcu'
 
 def reset_arduino(port):
     arduino = serial.Serial(port, 115200)

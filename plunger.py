@@ -195,8 +195,10 @@ class Plunger(object):
 
 
 def cycle(plunger):
+    plunger.speed = 1
     plunger.valve = "input"
     plunger.position = 3000
+    plunger.speed = 20
     plunger.valve = "output"
     plunger.position = 0
 

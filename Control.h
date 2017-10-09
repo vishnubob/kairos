@@ -1,3 +1,4 @@
+#define PIN_FLASH_FIRE      9
 #define PIN_CAMERA_SHUTTER  10
 #define PIN_CAMERA_FOCUS    4
 #define PIN_LASER_POWER     3
@@ -33,6 +34,8 @@ public:
       digitalWrite(pin_shutter, LOW);
       pinMode(pin_focus, OUTPUT);
       digitalWrite(pin_focus, LOW);
+      pinMode(PIN_FLASH_FIRE, OUTPUT);
+      digitalWrite(PIN_FLASH_FIRE, LOW);
       TCCR0A = TCCR0B = 0;
       TCCR1A = TCCR1B = 0;
       TCNT1 = 1;
