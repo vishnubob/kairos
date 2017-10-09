@@ -1,15 +1,16 @@
 #!/bin/sh
 
+proj_name=timestop
 build_dir=/tmp/__arduino_build
 if [ -d $build ]; then
 	rm -rf $build_dir
 fi
 mkdir -p ${build_dir}/build
-mkdir -p ${build_dir}/flashphoto
-cp *.h *.ino ${build_dir}/flashphoto
+mkdir -p ${build_dir}/${proj_name}
+cp -r src/firmware ${build_dir}/${proj_name}
 
 pwd=$(pwd)
-cd $build_dir/flashphoto
+cd ${build_dir}/${proj_name}
 
 /usr/share/arduino/arduino-builder \
 	-hardware /usr/share/arduino/hardware \
@@ -21,4 +22,4 @@ cd $build_dir/flashphoto
 	$(pwd)
 
 cd ${pwd}
-cp ${build_dir}/build/*.ino.hex .
+cp ${build_dir}/build/${proj_name}.ino.hex .

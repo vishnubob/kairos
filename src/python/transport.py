@@ -13,7 +13,7 @@ class SerialTransport(Transport):
     def __init__(self, port, baudrate=None, timeout=1, encoding=Encoding):
         self.port = port
         baudrate = baudrate if baudrate != None else self.DefaultBaudrate
-        self.io = serial.Serial(port, baudrate=baud, timeout=timeout)
+        self.io = serial.Serial(port, baudrate=baudrate, timeout=timeout)
         self.encoding = encoding
 
     def readline(self):
@@ -22,9 +22,10 @@ class SerialTransport(Transport):
         return resp
 
     def send(self, command, callback):
+        command = command.encode(self.encoding)
         self.io.write(command)
         resp = self.readline()
-        self.log("->", block.strip(), "<-", resp.strip())
+        self.log("->", command.strip(), "<-", resp.strip())
         callback(resp)
 
     def reset(self):

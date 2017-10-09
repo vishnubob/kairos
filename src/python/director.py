@@ -1,14 +1,16 @@
 import os
 from . plunger import build_manager
-from . controller import Controller
+from . controller import build_controller
 
-ARDUINO_PORT = os.getenv("ARDUINO_PORT")
-PLUNGER_PORT = os.getenv("PLUNGER_PORT")
+ARDUINO_PORT = os.getenv("ARDUINO_PORT", "/dev/ttyUSB1")
+PLUNGER_PORT = os.getenv("PLUNGER_PORT", "/dev/ttyUSB0")
+print("ARDUINO_PORT =", ARDUINO_PORT)
+print("PLUNGER_PORT =", PLUNGER_PORT)
 
 class Director(object):
     def __init__(self):
-        self.mcu = Controller(port=ARDUINO_PORT)
-        self.pumps = build_manager(port=ARDUINO_PORT)
+        self.mcu = build_controller(ARDUINO_PORT)
+        self.pumps = build_manager(ARDUINO_PORT)
 
     def init_pumps(self):
         for pump in self.pumps:

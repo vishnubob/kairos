@@ -1,5 +1,6 @@
 import serial
 import time
+from . transport import SerialTransport
 
 class ControllerTransport(SerialTransport):
     DefaultBaudrate = 115200
@@ -15,7 +16,7 @@ class Controller(object):
     def send(self, cmd, callback=None):
         def wrap_callback(plunger, callback, key):
             def wrapper(resp):
-                self.cache["status"] status = resp.strip()
+                self.cache["status"] = status = resp.strip()
                 if callback:
                     value = callback(resp)
             return wrapper
@@ -41,3 +42,8 @@ class Controller(object):
 
     def laser_toggle(self):
         self.send("L")
+
+def build_controller(port):
+    tp = ControllerTransport(port)
+    ctl = Controller(tp)
+    return ctl

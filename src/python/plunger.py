@@ -92,8 +92,9 @@ class PlungerBase(object):
                 if error:
                     raise PlungerError(error)
             return wrapper
-        cmd = self.command_block(cmd)
         callback = wrap_callback(self, callback, key)
+        cmd = self.command_block(cmd)
+        cmd += 'R\r\n'
         self.transport.send(cmd, callback=callback)
         if wait:
             self.wait()
