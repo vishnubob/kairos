@@ -1,5 +1,30 @@
 EarthGravity = 9.81
 
+class TimerCalculator(object):
+    DefaultFrequency = 16e6
+    Prescaler = [1, 8, 32, 32, 64, 128, 256, 1024]
+
+    def __init__(self, frequency=DefaultFrequency, prescaler=1):
+        self.frequency = frequency
+        self.prescaler = 1
+
+    def real_time(self, tick, prescaler=None):
+        prescaler = prescaler if prescaler != None else self.prescaler
+        return tick / float(self.frequency / prescaler)
+
+    def real_time_all(self, tick):
+        return {ps: self.real_time(tick, prescaler=ps) for ps in self.PrescalerValues}
+
+    def ticks(self, real_time, prescaler=None):
+        prescaler = prescaler if prescaler != None else self.prescaler
+        ticks = real_time * float(self.frequency / prescaler)
+        int_ticks = int(round(ticks))
+        real_time_int = self.real_time(int_ticks, prescaler=prescaler)
+        return (int_ticks, abs(real_time - real_time_int))
+
+    def ticks_all(self, real_time):
+        return {ps: self.ticks(real_time, prescaler=ps) for ps in self.PrescalerValues}
+
 class FallingBody(object):
     def __init__(self, **kw):
         keys = map(str.upper, kw.keys())
