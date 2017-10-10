@@ -3,3 +3,7 @@ tarpit
 *.hex
 .python-version
 .sconsign.dblite
+ports
+.*DS*
+__pycache__
+._*
