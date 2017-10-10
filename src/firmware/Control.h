@@ -1,5 +1,5 @@
-#define PIN_FLASH_FIRE      9
-#define PIN_CAMERA_SHUTTER  10
+#define PIN_FLASH_FIRE      10
+#define PIN_CAMERA_SHUTTER  9
 #define PIN_CAMERA_FOCUS    4
 #define PIN_LASER_POWER     3
 
@@ -56,7 +56,7 @@ public:
   void expose(void) __attribute__((always_inline))
   {
       digitalWrite(pin_shutter, HIGH);
-      _delay_ms(75);
+      _delay_ms(200);
       digitalWrite(pin_shutter, LOW);
   }
 
@@ -135,8 +135,8 @@ public:
 
   void arm_dryrun (void)
   {
-    cli();
     if (armed) return;
+    cli();
     laser.on();
     ldr.arm();
     sei();
@@ -147,8 +147,8 @@ public:
 
   void arm (void)
   {
-    cli();
     if (armed) return;
+    cli();
     laser.on();
     camera.arm();
     ldr.arm();
@@ -160,8 +160,8 @@ public:
 
   void disarm (void)
   {
-    cli();
     if (!armed) return;
+    cli();
     ldr.disarm();
     camera.disarm();
     laser.off();

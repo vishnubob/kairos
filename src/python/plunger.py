@@ -69,7 +69,19 @@ class PlungerBase(object):
         self.cache = {}
         self._status = None
 
-    def send(self, cmd, callback=None, key=None, wait=True):
+    def send(self, cmd, callback=None, key=None, wait=True, query=False, timeout=None):
+        while 1:
+            self.send_actual(cmd, callback=callback, key=key, wait=wait, query=query, timeout=timeout)
+            if not self.cache["ready"] and wait:
+                try:
+                    self.wait(timeout=timeout)
+                except TimeoutError:
+                    self.transport.io.close()
+                    self.transport.io.open()
+                    continue
+            break
+
+    def send_actual(self, cmd, callback=None, key=None, wait=True, query=False, timeout=None):
         def wrap_callback(plunger, callback, key):
             def wrapper(resp):
                 if not resp:
@@ -94,10 +106,11 @@ class PlungerBase(object):
             return wrapper
         callback = wrap_callback(self, callback, key)
         cmd = self.command_block(cmd)
-        cmd += 'R\r\n'
+        if query:
+            cmd += '\r\n'
+        else:
+            cmd += 'R\r\n'
         self.transport.send(cmd, callback=callback)
-        if wait:
-            self.wait()
 
     def answer_block(self, response):
         slash = response.index('/0')
@@ -116,9 +129,12 @@ class PlungerBase(object):
         command_block %= (self.addr, data_block)
         return command_block
 
-    def wait(self):
+    def wait(self, timeout=None):
+        ts = time.time()
         while not self.ready:
             time.sleep(1)
+            if timeout and (time.time() - ts > timeout):
+                raise TimeoutError(timeout)
 
     def initialize(self, full_force=False, input_valve=VALVE_RIGHT):
         command_map = {
@@ -138,12 +154,12 @@ class PlungerBase(object):
 
     @property
     def ready(self):
-        self.send('Q', wait=False)
+        self.send('Q', wait=False, query=True)
         return self.cache["ready"]
 
     @property
     def status(self):
-        self.send('Q', wait=False)
+        self.send('Q', wait=False, query=True)
         return self.cache["status"]
 
     def get_speed(self):
@@ -154,12 +170,26 @@ class PlungerBase(object):
         self.send(cmd)
     speed = property(get_speed, set_speed)
 
+    def aspirate(self, value, **kw):
+        cmd = "P%d" % value
+        self.send(cmd)
+
+    def dispense(self, value, **kw):
+        cmd = "D%d" % value
+        self.send(cmd, **kw)
+
+    def move(self, value, **kw):
+        cmd = "A%d" % value
+        self.send(cmd, **kw)
+
+    def stop(self):
+        self.send('T')
+
     def get_position(self):
         self.send('?4', key="position", wait=False, callback=int)
         return self.cache["position"]
     def set_position(self, value):
-        cmd = "A%d" % value
-        self.send(cmd)
+        self.move(value)
     position = property(get_position, set_position)
 
     def get_valve(self):
@@ -178,18 +208,18 @@ class PlungerBase(object):
     valve = property(get_valve, set_valve)
 
 class Plunger(PlungerBase):
-    def fill(self, position=3000, speed=1):
-        plunger.speed = speed
-        plunger.valve = "input"
-        plunger.position = position
+    def fill(self, position=3000):
+        self.valve = "input"
+        self.aspirate(position)
 
-    def flush(self, position=0, speed=20):
-        plunger.speed = speed
-        plunger.valve = "output"
-        plunger.position = position
+    def flush(self, position=3000):
+        self.valve = "output"
+        self.dispense(position)
 
-    def cycle(self, fill_position=3000, fill_speed=1, flush_position=0, flush_speed=20):
+    def cycle(self, fill_position=3000, fill_speed=1, flush_position=3000, flush_speed=20):
+        self.speed = fill_speed
         self.fill(position=fill_position, speed=fill_speed)
+        self.speed = flush_speed
         self.flush(position=flush_position, speed=flush_speed)
 
 def build_manager(port):

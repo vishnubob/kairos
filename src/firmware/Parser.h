@@ -51,9 +51,9 @@ public:
           Serial.println("OK");
           break;
         case 'P':
-          Serial.print("{'exposure_delay': "};
+          Serial.print("{'exposure_delay': ");
           Serial.print(control.camera.exposure_delay / 250000.0, 4);
-          Serial.print(", 'exposure_duration': "};
+          Serial.print(", 'exposure_duration': ");
           Serial.print(control.camera.exposure_duration / 250000.0, 4);
           Serial.println("}");
           break;

@@ -7,7 +7,7 @@ if [ -d $build ]; then
 fi
 mkdir -p ${build_dir}/build
 mkdir -p ${build_dir}/${proj_name}
-cp -r src/firmware ${build_dir}/${proj_name}
+cp -r src/firmware/* ${build_dir}/${proj_name}
 
 pwd=$(pwd)
 cd ${build_dir}/${proj_name}

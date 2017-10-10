@@ -7,7 +7,7 @@ class Transport(object):
     pass
 
 class SerialTransport(Transport):
-    Encoding = "latin-1"
+    Encoding = "ascii"
     DefaultBaudrate = 9600
 
     def __init__(self, port, baudrate=None, timeout=1, encoding=Encoding):
@@ -18,14 +18,15 @@ class SerialTransport(Transport):
 
     def readline(self):
         resp = self.io.readline()
-        resp = resp.decode(self.encoding)
+        resp = resp.decode(self.encoding, errors="ignore")
         return resp
 
     def send(self, command, callback):
         command = command.encode(self.encoding)
         self.io.write(command)
+        self.io.flush()
         resp = self.readline()
-        self.log("->", command.strip(), "<-", resp.strip())
+        self.log("->", repr(command), "<-", repr(resp))
         callback(resp)
 
     def reset(self):

@@ -9,10 +9,10 @@ volatile uint16_t exp_stop = 0;
 
 ISR (ANALOG_COMP_vect)
 {
-    triggered = true;
     if (!control.armed) return;
     ACSR = bit(ACD);
     // enable int on match with OCR1B
+    triggered = true;
     if (!control.dryrun) return;
     cli();
     OCR1A = MAX_EXPOSURE_DURATION;
@@ -75,24 +75,31 @@ void loop ()
 {
   if(triggered)
   {
+    triggered = false;
     control.laser.off();
-    Serial.print("TRG\r\n");
+    if (control.dryrun)
+    {
+      control.disarm();
+    }
+    Serial.println("TRG");
     //print_timers(triggered);
-    triggered = 0;
   }
+
   if(exp_start)
   {
+    exp_start = 0;
     //Serial.print("O: ");
     //print_timers(exp_start);
-    exp_start = 0;
   }
+
   if(exp_stop)
   {
-    //Serial.print("o: ");
-    //control.disarm();
-    print_timers(exp_stop);
+    control.disarm();
     exp_stop = 0;
+    //Serial.print("o: ");
+    //print_timers(exp_stop);
   }
+
   if(Serial.available())
   {
     char ch = Serial.read();

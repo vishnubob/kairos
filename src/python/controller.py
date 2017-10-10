@@ -14,19 +14,21 @@ class Controller(object):
         self.cache = {}
 
     def send(self, cmd, callback=None):
-        def wrap_callback(plunger, callback, key):
+        def wrap_callback(plunger, callback):
             def wrapper(resp):
                 self.cache["status"] = status = resp.strip()
                 if callback:
                     value = callback(resp)
             return wrapper
-        callback = wrap_callback(self, callback, key)
+        callback = wrap_callback(self, callback)
         self.transport.send(cmd, callback=callback)
 
     @property
     def triggered(self):
+        if not self.transport.io.inWaiting():
+            return
         to = self.transport.timeout
-        self.transport.timeout = .05
+        self.transport.timeout = .1
         line = self.transport.readline()
         self.transport.timeout = to
         return "TRG" in line
@@ -44,6 +46,6 @@ class Controller(object):
         self.send("L")
 
 def build_controller(port):
-    tp = ControllerTransport(port)
+    tp = ControllerTransport(port, timeout=5)
     ctl = Controller(tp)
     return ctl
