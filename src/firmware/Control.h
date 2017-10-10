@@ -1,5 +1,5 @@
-#define PIN_FLASH_FIRE      10
-#define PIN_CAMERA_SHUTTER  9
+#define PIN_FLASH_FIRE      10 // port a
+#define PIN_CAMERA_SHUTTER  9 // port b
 #define PIN_CAMERA_FOCUS    4
 #define PIN_LASER_POWER     3
 
@@ -14,18 +14,23 @@ typedef void (*_isr_t)();
 // :: Camera ::
 //
 
-#define DEFAULT_EXPOSURE_DELAY 10000
-#define DEFAULT_EXPOSURE_DURATION 25000
-#define MAX_EXPOSURE_DURATION 60000
+#define DEFAULT_EXPOSURE_DELAY 18289
+#define DEFAULT_FLASH_DELAY (DEFAULT_EXPOSURE_DELAY - 5190)
+#define DEFAULT_FLASH_DURATION (3125 * 2)
+#define DEFAULT_EXPOSURE_DURATION (3125 * 2)
+#define MAX_EXPOSURE_DURATION 0xFFFF
 
 class Camera
 {
 public:
-  Camera(uint8_t shutter=PIN_CAMERA_SHUTTER, uint8_t focus=PIN_CAMERA_FOCUS, uint16_t exp_delay=DEFAULT_EXPOSURE_DELAY, uint16_t exp_duration=DEFAULT_EXPOSURE_DURATION) :
+  Camera(uint8_t shutter=PIN_CAMERA_SHUTTER, uint8_t focus=PIN_CAMERA_FOCUS, uint8_t flash=PIN_FLASH_FIRE, uint16_t exp_delay=DEFAULT_EXPOSURE_DELAY, uint16_t exp_duration=DEFAULT_EXPOSURE_DURATION, uint16_t fls_delay=DEFAULT_FLASH_DELAY, uint16_t fls_duration=DEFAULT_FLASH_DURATION) :
     pin_shutter(shutter), 
     pin_focus(focus),
+    pin_flash(flash),
     exposure_delay(exp_delay),
-    exposure_duration(exp_duration)
+    exposure_duration(exp_duration),
+    flash_delay(fls_delay),
+    flash_duration(fls_duration)
   {}
 
   void setup()
@@ -34,36 +39,41 @@ public:
       digitalWrite(pin_shutter, LOW);
       pinMode(pin_focus, OUTPUT);
       digitalWrite(pin_focus, LOW);
-      pinMode(PIN_FLASH_FIRE, OUTPUT);
-      digitalWrite(PIN_FLASH_FIRE, LOW);
-      TCCR0A = TCCR0B = 0;
+      pinMode(pin_flash, OUTPUT);
+      digitalWrite(pin_flash, LOW);
+      //TCCR0A = TCCR0B = 0;
       TCCR1A = TCCR1B = 0;
-      TCNT1 = 1;
+      TCNT1 = 0;
   }
 
   void arm()
   {
-      TCCR1A = TCCR1B = 0;
-      TCNT1 = 1;
+      //TCCR1A = TCCR1B = 0;
+      //TCNT1 = 0;
+      digitalWrite(pin_focus, HIGH);
   }
 
   void disarm()
   {
       TCCR1A = TCCR1B = 0;
-      TCNT1 = 1;
+      TCNT1 = 0;
+      digitalWrite(pin_focus, LOW);
   }
 
   void expose(void) __attribute__((always_inline))
   {
       digitalWrite(pin_shutter, HIGH);
-      _delay_ms(200);
+      _delay_ms(60);
       digitalWrite(pin_shutter, LOW);
   }
 
   uint16_t  exposure_delay;
   uint16_t  exposure_duration;
+  uint16_t  flash_delay;
+  uint16_t  flash_duration;
   uint8_t   pin_shutter;
   uint8_t   pin_focus;
+  uint8_t   pin_flash;
 };
 
 //

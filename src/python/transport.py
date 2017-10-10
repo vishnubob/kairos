@@ -37,11 +37,10 @@ class SerialTransport(Transport):
     def log(self, *args):
         msg = str.join(' ', map(str, args))
         msg = "%s: %s" % (self.__class__.__name__, msg)
-        print(msg)
+        #print(msg)
 
     def get_timeout(self):
         return self.io.timeout
     def set_timeout(self, value):
         self.io.timeout = value
     timeout = property(get_timeout, set_timeout)
-

@@ -13,30 +13,25 @@ ISR (ANALOG_COMP_vect)
     ACSR = bit(ACD);
     // enable int on match with OCR1B
     triggered = true;
-    if (!control.dryrun) return;
+    if (control.dryrun) return;
     cli();
-    OCR1A = MAX_EXPOSURE_DURATION;
+    ICR1 = MAX_EXPOSURE_DURATION;
     OCR1B = control.camera.exposure_delay;
-    TCCR1A = bit(COM1B1) | bit(COM1B0);
-    TCCR1B = bit(WGM12) | bit(CS10) | bit(CS11);
-    TIMSK1 = bit(OCIE1B);
+    OCR1A = control.camera.flash_delay;
+    TCNT1 = 0;
+    TCCR1A = bit(COM1A1) | bit(COM1A0) | bit(COM1B1) | bit(COM1B0);
+    TCCR1B = bit(WGM12) | bit(WGM13) | bit(CS12);
+    TIMSK1 = bit(OCIE1A) | bit(OCIE1B);
     sei();
 }
 
 ISR(TIMER1_COMPB_vect)
 {
-    cli();
     if (TCCR1A & bit(COM1B0))
     {
-      // we just exposed the camera, configure pin to turn off on next MATCH
-      // configure next match at 100ms
-      TCCR1B = 0;
-      TCCR1A = bit(COM1B1);
+      TCCR1A &= ~bit(COM1B0);
       exp_start = TCNT1;
-      OCR1B = control.camera.exposure_duration;
-      TCNT1 = 1;
-      TCCR1B = bit(WGM12) | bit(CS10) | bit(CS11);
-      //digitalWrite(PIN_FLASH_FIRE, HIGH);
+      OCR1B += control.camera.exposure_duration;
     } else
     {
       // we just finished our exposure, wrap it up
@@ -44,11 +39,17 @@ ISR(TIMER1_COMPB_vect)
       TIMSK1 = 0;
       TCCR1B = 0;
       TCCR1A = 0;
-      //digitalWrite(PIN_FLASH_FIRE, LOW);
     }
-    sei();
 }
 
+ISR(TIMER1_COMPA_vect)
+{
+    if (TCCR1A & bit(COM1A0))
+    {
+      TCCR1A &= ~bit(COM1A0);
+      OCR1A += control.camera.flash_duration;
+    }
+}
 void setup ()
 {
     Serial.begin(115200);

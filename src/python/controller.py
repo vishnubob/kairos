@@ -45,6 +45,9 @@ class Controller(object):
     def laser_toggle(self):
         self.send("L")
 
+    def set_flash_delay(self, value):
+        self.send("%dQ" % value)
+
 def build_controller(port):
     tp = ControllerTransport(port, timeout=5)
     ctl = Controller(tp)

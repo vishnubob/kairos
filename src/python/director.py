@@ -36,5 +36,6 @@ class Director(object):
                     pump.stop()
                     pos = pump.position
                     break
+            time.sleep(2)
             self.mcu.disarm()
         return pos
