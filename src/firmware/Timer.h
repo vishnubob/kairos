@@ -29,9 +29,9 @@ public:
   EventTimer(TimerDevice &ch_a, TimerDevice &ch_b):
     channel_a(ch_a),
     channel_b(ch_b)
-  {}
+  { reset(); }
 
-  void trigger(void)
+  void start(void)
   {
       cli();
       ch_a_timestamp = 0;
@@ -57,10 +57,12 @@ public:
 public:
   TimerDevice &channel_a;
   TimerDevice &channel_b;
-  uint16_t channel_a_timestamp = 0;
-  uint16_t channel_b_timestamp = 0;
-
+  //uint16_t channel_a_timestamp = 0;
+  //uint16_t channel_b_timestamp = 0;
 };
 
-extern EventTimer kairos_timer;
+extern TimerDevice channel_a;
+extern TimerDevice channel_b;
+extern EventTimer event_timer;
+
 #endif // __KAIROS_TIMER

@@ -4,37 +4,67 @@
 #include "Device.h"
 #include "Trigger.h"
 
+#define PIN_FLASH_FIRE      10 // port a
+#define PIN_CAMERA_SHUTTER  9 // port b
+#define PIN_CAMERA_FOCUS    4
+#define PIN_LASER_POWER     3
+
 class Control
 {
 public:
   void Control(ComparatorTrigger& _ldr, EventTimer& _timer)
     ldr(_ldr),
     timer(_timer),
-    laser(PIN_LASER_POWER)
+    laser(PIN_LASER_POWER),
+    focus(PIN_CAMERA_FOCUS)
   {}
 
   void arm (bool dryrun=false)
   {
-      if (ldr.is_armed()) return;
-      laser.on();
-      callback_t cb = dryrun ? NULL : (&(timer.trigger));
-      ldr.set_callback(cb);
-      ldr.enable();
-      _delay_ms(500);
-      ldr.arm();
+      cli();
+      if (!ldr.is_armed())
+      {
+        focus.on();
+        laser.on();
+        callback_t callback = dryrun ? NULL : (&(timer.start));
+        ldr.set_callback(callback);
+        _delay_ms(500);
+        ldr.arm();
+      }
+      sei();
   }
 
   void disarm (void)
   {
-      if (!ldr.is_armed()) return;
-      ldr.disable();
-      laser.off();
-      timer.reset();
+      cli();
+      if (ldr.is_armed()) 
+      {
+        ldr.disarm();
+        laser.off();
+        focus.off();
+        timer.reset();
+      }
+      sei();
   }
 
+  void refresh()
+  {
+    if(ldr.is_armed() && ldr.is_triggered())
+    {
+      if (laser.is_on()) laser.off();
+      Serial.println("TRG");
+      // total hack
+      _delay_ms(1000);
+      disarm();
+    }
+  }
+};
+
 public:
-  Comparator &ldr;
+  ComparatorTrigger &ldr;
   EventTimer &timer;
+  TimerDevice &shutter;
+  TimerDevice &flash;
   PinDevice laser;
   PinDevice focus;
 };

@@ -1,13 +1,6 @@
+#include "Trigger.h"
 
-Comparator kairos_comparator;
+Comparator comparator_trigger;
 
-ISR (ANALOG_COMP_vect)
-{
-    sei();
-    if (kairos_comparator.is_armed())
-    {
-        kairos_comparator.trigger();
-    }
-    cli();
-}
+ISR (ANALOG_COMP_vect) { comparator_trigger.trigger(); }
 

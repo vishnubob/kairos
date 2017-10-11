@@ -1,5 +1,6 @@
 #include "Trigger.h"
 #include "Timer.h"
+#include "Control.h"
 
 void print_timers(uint8_t tcnt)
 {
@@ -16,7 +17,6 @@ void print_timers(uint8_t tcnt)
     Serial.print("]\r\n");
 }
 
-
 class Frontend
 {}
 
@@ -26,6 +26,15 @@ public:
     SerialFront(Control &ctrl) : control(ctrl) {}
     long val = 0;
 
+    void refresh()
+    {
+        if(Serial.available())
+        {
+          char ch = Serial.read();
+          feed(ch);
+        }
+    }
+  
     void feed(char ch)
     {
       switch(ch) {
@@ -39,16 +48,16 @@ public:
           val = 0;
           break;
         case 'X':
+          control.timer.start();
           Serial.println("OK");
-          control.camera.trigger();
           break;
         case 'a':
+          control.arm(true);
           Serial.println("OK");
-          control.arm_dryrun();
           break;
         case 'A':
-          Serial.println("OK");
           control.arm();
+          Serial.println("OK");
           break;
         case 'D':
           control.disarm();
@@ -79,15 +88,15 @@ public:
           Serial.println("OK");
           break;
         case 'P':
-          Serial.print("{'exposure_delay': ");
-          Serial.print(control.camera.exposure_delay, DEC);
-          Serial.print(", 'exposure_duration': ");
-          Serial.print(control.camera.exposure_duration, DEC);
-          Serial.print(", 'flash_delay': ");
-          Serial.print(control.camera.flash_delay, DEC);
-          Serial.print(", 'flash_duration': ");
-          Serial.print(control.camera.flash_duration, DEC);
-          Serial.println("}");
+          Serial.print("{'flash': {'on_time': ");
+          Serial.print(control.flash.on_time, DEC);
+          Serial.print(", 'off_time': ");
+          Serial.print(control.camera.off_time, DEC);
+          Serial.print("}, 'shutter': {'on_time': ");
+          Serial.print(control.shutter.on_time, DEC);
+          Serial.print(", 'off_time': ");
+          Serial.print(control.shutter.off_time, DEC);
+          Serial.println("}}");
           break;
     }
   }
