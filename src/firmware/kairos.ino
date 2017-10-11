@@ -1,6 +1,16 @@
 #include "Control.h"
 #include "Parser.h"
 
+#define PIN_FLASH_FIRE      10 // port a
+#define PIN_CAMERA_SHUTTER  9 // port b
+#define PIN_CAMERA_FOCUS    4
+#define PIN_LASER_POWER     3
+
+#define DEFAULT_EXPOSURE_DELAY 18289
+#define DEFAULT_FLASH_DELAY (DEFAULT_EXPOSURE_DELAY - 5190)
+#define DEFAULT_FLASH_DURATION (3125 * 2)
+#define DEFAULT_EXPOSURE_DURATION (3125 * 2)
+#define MAX_EXPOSURE_DURATION 0xFFFF
 Control control;
 Parser parser(control);
 volatile bool triggered = false;

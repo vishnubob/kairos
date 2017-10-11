@@ -1,9 +1,29 @@
-#include <util/delay.h>
+#include "Trigger.h"
+#include "Timer.h"
 
-class Parser
+void print_timers(uint8_t tcnt)
+{
+    Serial.print("[TCNT1 0x");
+    Serial.print(tcnt, DEC);
+    Serial.print("] [OCR1A 0x");
+    Serial.print(OCR1A, DEC);
+    Serial.print("] [OCR1B 0x");
+    Serial.print(OCR1B, DEC);
+    Serial.print("] [TCCR1A 0x");
+    Serial.print(TCCR1A, BIN);
+    Serial.print("] [TCCR1B 0x");
+    Serial.print(TCCR1B, BIN);
+    Serial.print("]\r\n");
+}
+
+
+class Frontend
+{}
+
+class SerialFrontend : public Frontend
 {
 public:
-    Parser(Control &ctrl) : control(ctrl) {}
+    SerialFront(Control &ctrl) : control(ctrl) {}
     long val = 0;
 
     void feed(char ch)
@@ -20,7 +40,7 @@ public:
           break;
         case 'X':
           Serial.println("OK");
-          control.camera.expose();
+          control.camera.trigger();
           break;
         case 'a':
           Serial.println("OK");
@@ -39,22 +59,22 @@ public:
           Serial.println("OK");
           break;
         case 'S':
-          control.camera.exposure_delay = val;
+          control.camera.on_time = val;
           val = 0;
           Serial.println("OK");
           break;
         case 'F':
-          control.camera.exposure_duration = val;
+          control.camera.off_time = val;
           val = 0;
           Serial.println("OK");
           break;
         case 'Q':
-          control.camera.flash_delay = val;
+          control.flash.on_time = val;
           val = 0;
           Serial.println("OK");
           break;
         case 'U':
-          control.camera.flash_duration = val;
+          control.flash.off_time = val;
           val = 0;
           Serial.println("OK");
           break;
@@ -72,5 +92,6 @@ public:
     }
   }
 
-Control &control;
+public:
+  Control &control;
 };

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-proj_name=timestop
+proj_name=kairos
 build_dir=/tmp/__arduino_build
 if [ -d $build ]; then
 	rm -rf $build_dir
