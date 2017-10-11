@@ -1,8 +1,8 @@
-#include "EventTimer.h"
+#include "Timer.h"
 
 TimerDevice channel_a(TimerDevice::ChannelA);
 TimerDevice channel_b(TimerDevice::ChannelB);
-EventTimer event_timer(channel_a, channel_b);
+EventTimer event_timer;
 
 ISR(TIMER1_COMPA_vect)
 {

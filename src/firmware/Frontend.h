@@ -18,12 +18,14 @@ void print_timers(uint8_t tcnt)
 }
 
 class Frontend
-{}
+{
+};
 
-class SerialFrontend : public Frontend
+//class SerialFrontend : public Frontend
+class SerialFrontend
 {
 public:
-    SerialFront(Control &ctrl) : control(ctrl) {}
+    SerialFrontend(Control &ctrl) : control(ctrl) {}
     long val = 0;
 
     void refresh()
@@ -68,12 +70,12 @@ public:
           Serial.println("OK");
           break;
         case 'S':
-          control.camera.on_time = val;
+          control.shutter.on_time = val;
           val = 0;
           Serial.println("OK");
           break;
         case 'F':
-          control.camera.off_time = val;
+          control.shutter.off_time = val;
           val = 0;
           Serial.println("OK");
           break;
@@ -91,7 +93,7 @@ public:
           Serial.print("{'flash': {'on_time': ");
           Serial.print(control.flash.on_time, DEC);
           Serial.print(", 'off_time': ");
-          Serial.print(control.camera.off_time, DEC);
+          Serial.print(control.flash.off_time, DEC);
           Serial.print("}, 'shutter': {'on_time': ");
           Serial.print(control.shutter.on_time, DEC);
           Serial.print(", 'off_time': ");

@@ -1,8 +1,10 @@
 #ifndef _KAIROS_CONTROL_H
 #define _KAIROS_CONTROL_H
 
+#include "Arduino.h"
 #include "Device.h"
 #include "Trigger.h"
+#include "Timer.h"
 
 #define PIN_FLASH_FIRE      10 // port a
 #define PIN_CAMERA_SHUTTER  9 // port b
@@ -12,11 +14,13 @@
 class Control
 {
 public:
-  void Control(ComparatorTrigger& _ldr, EventTimer& _timer)
+  Control(ComparatorTrigger& _ldr, EventTimer& _timer) :
     ldr(_ldr),
     timer(_timer),
     laser(PIN_LASER_POWER),
-    focus(PIN_CAMERA_FOCUS)
+    focus(PIN_CAMERA_FOCUS),
+    shutter(channel_a),
+    flash(channel_b)
   {}
 
   void arm (bool dryrun=false)
@@ -24,9 +28,10 @@ public:
       cli();
       if (!ldr.is_armed())
       {
+        ldr.enable();
         focus.on();
         laser.on();
-        callback_t callback = dryrun ? NULL : (&(timer.start));
+        Trigger::callback_t callback = dryrun ? NULL : static_cast<Trigger::callback_t>(timer.start);
         ldr.set_callback(callback);
         _delay_ms(500);
         ldr.arm();
@@ -58,7 +63,6 @@ public:
       disarm();
     }
   }
-};
 
 public:
   ComparatorTrigger &ldr;

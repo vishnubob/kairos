@@ -1,3 +1,7 @@
+#ifndef _KAIROS_DEVICE_H
+#define _KAIROS_DEVICE_H
+#include "Arduino.h"
+
 class Device
 {
 public:
@@ -14,8 +18,8 @@ public:
   PinDevice(uint8_t _pin) : pin(_pin) 
   {
     // XXX: hardwired to output
-    pinMode(pin_power, OUTPUT);
-    digitalWrite(pin_power, LOW);
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, LOW);
   }
 
   virtual void on (void) { digitalWrite(pin, HIGH); }
@@ -27,4 +31,4 @@ public:
   uint8_t pin;
 };
 
-
+#endif // _KAIROS_DEVICE_H

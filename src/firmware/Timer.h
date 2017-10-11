@@ -1,41 +1,42 @@
 #ifndef __KAIROS_TIMER
 #define __KAIROS_TIMER
 
+#include "Arduino.h"
 #include "Device.h"
+
+static uint8_t _channel_pin_map[2] = {10, 9};
 
 class TimerDevice : public PinDevice
 {
 public:
-  enum tm_channel_t { ChA, ChannelA; ChB, ChannelB };
-  uint8_t const _channel_pin_map[] = {10, 9};
+  enum tm_channel_t { ChannelA, ChannelB };
 
-  TimerDevice(tm_channel_t tm_channel=ChA, uint16_t tm_ontime=0, uint16_t tm_offtime=0) : 
-      channel(tm_channel), 
-      on_time(tm_ontime), 
-      off_time(tm_offtime)
-      PinDevice(_channel_pin_map[channel])
+  TimerDevice(tm_channel_t ch=ChannelA, uint16_t on=0, uint16_t off=0) : 
+      PinDevice(_channel_pin_map[ch]),
+      channel(ch), 
+      on_time(on), 
+      off_time(off)
   {}
 
 public:
-  tm_offset_t on_time;
-  tm_offset_t off_time;
   tm_channel_t channel;
-  tm_channel_t channel_pin;
+  uint16_t on_time;
+  uint16_t off_time;
 };
+
+extern TimerDevice channel_a;
+extern TimerDevice channel_b;
 
 class EventTimer
 {
 public:
-  EventTimer(TimerDevice &ch_a, TimerDevice &ch_b):
-    channel_a(ch_a),
-    channel_b(ch_b)
-  { reset(); }
+  EventTimer() { reset(); }
 
-  void start(void)
+  static void start(void)
   {
       cli();
-      ch_a_timestamp = 0;
-      ch_b_timestamp = 0;
+      //ch_a_timestamp = 0;
+      //ch_b_timestamp = 0;
       ICR1 = 0xFFFF;
       OCR1A = channel_a.on_time;
       OCR1B = channel_b.on_time;
@@ -55,14 +56,9 @@ public:
   }
 
 public:
-  TimerDevice &channel_a;
-  TimerDevice &channel_b;
   //uint16_t channel_a_timestamp = 0;
   //uint16_t channel_b_timestamp = 0;
 };
 
-extern TimerDevice channel_a;
-extern TimerDevice channel_b;
 extern EventTimer event_timer;
-
 #endif // __KAIROS_TIMER

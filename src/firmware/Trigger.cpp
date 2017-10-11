@@ -1,6 +1,6 @@
 #include "Trigger.h"
 
-Comparator comparator_trigger;
+ComparatorTrigger comparator_trigger;
 
 ISR (ANALOG_COMP_vect) { comparator_trigger.trigger(); }
 
