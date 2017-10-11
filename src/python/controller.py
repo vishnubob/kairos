@@ -48,6 +48,9 @@ class Controller(object):
     def set_flash_delay(self, value):
         self.send("%dQ" % value)
 
+    def set_exposure_delay(self, value):
+        self.send("%dS" % value)
+
 def build_controller(port):
     tp = ControllerTransport(port, timeout=5)
     ctl = Controller(tp)

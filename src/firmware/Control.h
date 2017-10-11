@@ -20,6 +20,32 @@ typedef void (*_isr_t)();
 #define DEFAULT_EXPOSURE_DURATION (3125 * 2)
 #define MAX_EXPOSURE_DURATION 0xFFFF
 
+ISR(TIMER1_COMPB_vect)
+{
+    if (TCCR1A & bit(COM1B0))
+    {
+      TCCR1A &= ~bit(COM1B0);
+      exp_start = TCNT1;
+      OCR1B += control.camera.exposure_duration;
+    } else
+    {
+      // we just finished our exposure, wrap it up
+      exp_stop = TCNT1;
+      TIMSK1 = 0;
+      TCCR1B = 0;
+      TCCR1A = 0;
+    }
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+    if (TCCR1A & bit(COM1A0))
+    {
+      TCCR1A &= ~bit(COM1A0);
+      OCR1A += control.camera.flash_duration;
+    }
+}
+
 class Camera
 {
 public:
@@ -60,11 +86,31 @@ public:
       digitalWrite(pin_focus, LOW);
   }
 
-  void expose(void) __attribute__((always_inline))
+  void expose_force(size_t delay_ms=60) __attribute__((always_inline))
   {
       digitalWrite(pin_shutter, HIGH);
-      _delay_ms(60);
+      _delay_ms(delay);
       digitalWrite(pin_shutter, LOW);
+  }
+
+  void flash_force(size_t delay_ms=60) __attribute__((always_inline))
+  {
+      digitalWrite(pin_flash, HIGH);
+      _delay_ms(delay);
+      digitalWrite(pin_flash, LOW);
+  }
+
+  void expose(void) __attribute__((always_inline))
+  {
+      cli();
+      ICR1 = MAX_EXPOSURE_DURATION;
+      OCR1B = control.camera.exposure_delay;
+      OCR1A = control.camera.flash_delay;
+      TCNT1 = 0;
+      TCCR1A = bit(COM1A1) | bit(COM1A0) | bit(COM1B1) | bit(COM1B0);
+      TCCR1B = bit(WGM12) | bit(WGM13) | bit(CS12);
+      TIMSK1 = bit(OCIE1A) | bit(OCIE1B);
+      sei();
   }
 
   uint16_t  exposure_delay;

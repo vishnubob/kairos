@@ -25,31 +25,6 @@ ISR (ANALOG_COMP_vect)
     sei();
 }
 
-ISR(TIMER1_COMPB_vect)
-{
-    if (TCCR1A & bit(COM1B0))
-    {
-      TCCR1A &= ~bit(COM1B0);
-      exp_start = TCNT1;
-      OCR1B += control.camera.exposure_duration;
-    } else
-    {
-      // we just finished our exposure, wrap it up
-      exp_stop = TCNT1;
-      TIMSK1 = 0;
-      TCCR1B = 0;
-      TCCR1A = 0;
-    }
-}
-
-ISR(TIMER1_COMPA_vect)
-{
-    if (TCCR1A & bit(COM1A0))
-    {
-      TCCR1A &= ~bit(COM1A0);
-      OCR1A += control.camera.flash_duration;
-    }
-}
 void setup ()
 {
     Serial.begin(115200);
