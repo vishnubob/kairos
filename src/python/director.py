@@ -12,7 +12,7 @@ class Director(object):
     def __init__(self):
         self.mcu = build_controller(ARDUINO_PORT)
         self.pumps = build_manager(PLUNGER_PORT)
-        self.mcu.transport.reset()
+        #self.mcu.transport.reset()
 
     def init(self):
         for pump in self.pumps:

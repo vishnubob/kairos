@@ -11,6 +11,7 @@ class ControllerError(Exception):
 class Controller(object):
     def __init__(self, transport=None):
         self.transport = transport
+        print(self.transport.readline())
         self.cache = {}
 
     def send(self, cmd, callback=None):
@@ -45,11 +46,20 @@ class Controller(object):
     def laser_toggle(self):
         self.send("L")
 
+    def expose(self):
+        self.send("X")
+
     def set_flash_delay(self, value):
         self.send("%dQ" % value)
 
-    def set_exposure_delay(self, value):
+    def set_flash_duration(self, value):
+        self.send("%dU" % value)
+
+    def set_shutter_delay(self, value):
         self.send("%dS" % value)
+
+    def set_shutter_duration(self, value):
+        self.send("%dF" % value)
 
 def build_controller(port):
     tp = ControllerTransport(port, timeout=5)

@@ -1,11 +1,12 @@
 import gphoto2cffi as gp
+import os
 import io
 import uuid
 
 from rawkit.raw import Raw
 from rawkit.options import WhiteBalance, colorspaces, gamma_curves
 import PIL
-from PIL import Image
+from PIL import Image, ImageStat
 from tempfile import mkdtemp
 
 class CameraManager(object):
@@ -15,33 +16,32 @@ class CameraManager(object):
     def __getitem__(self, idx):
         return KairosCamera(idx)
 
-class KairosCamera(gp.Camera):
+class KairosCamera(object):
     def __init__(self, idx):
-        cam = gp.list_cameras()[idx]
-        (bud, device) = cam._usb_address
-        super(KairosCamera, self).__init__(bus=bus, device=device)
+        self.camera = gp.list_cameras()[idx]
 
-        # Get a list of files on the camera
-        files = tuple(my_cam.list_all_files())
+    def __iter__(self):
+        return iter(tuple(self.camera.list_all_files()))
 
-    def download(self, fileidx=0, filehandle=None):
-        if filename == None:
-            filehandle = io.StringIO()
-        else:
-            filehandle = open(filename, 'wb')
-        for chunk in my_cam.files[fileidx].iter_data():
-            filehandle.write(chunk)
-        return filehandle
+    def remove_all(self):
+        for image in self:
+            image.remove()
+
+    def download(self, fileidx=0):
+        fh = list(self)[fileidx]
+        data = fh.get_data()
+        fh.remove()
+        return data
 
 def lit_pixels(data):
     try:
-        img = Image.open(data)
+        img = Image.open(io.BytesIO(data))
     except:
         img = develop(data)
-        img = Image.open(data)
-    img = img.convert('1')
-    stats = PIL.ImageStat.Stat(img)
-    return stats.sum / float(stats.count)
+        img = Image.open(img)
+    img = img.convert('L')
+    stats = ImageStat.Stat(img)
+    return (stats.mean[0], stats.stddev[0])
 
 def develop(data, ext="png"):
     ext = (s for s in ext.split('.') if len(s))

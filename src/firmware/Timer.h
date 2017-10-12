@@ -20,8 +20,8 @@ public:
 
 public:
   tm_channel_t channel;
-  uint16_t on_time;
-  uint16_t off_time;
+  volatile uint16_t on_time;
+  volatile uint16_t off_time;
 };
 
 extern TimerDevice channel_a;

@@ -19,8 +19,8 @@ public:
     timer(_timer),
     laser(PIN_LASER_POWER),
     focus(PIN_CAMERA_FOCUS),
-    shutter(channel_a),
-    flash(channel_b)
+    shutter(channel_b),
+    flash(channel_a)
   {}
 
   void arm (bool dryrun=false)
