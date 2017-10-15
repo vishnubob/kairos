@@ -21,4 +21,3 @@ ISR(TIMER1_COMPB_vect)
       OCR1B = channel_b.off_time;
     }
 }
-

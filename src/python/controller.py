@@ -46,6 +46,9 @@ class Controller(object):
     def laser_toggle(self):
         self.send("L")
 
+    def mirror_lockup(self):
+        self.send("K")
+
     def expose(self):
         self.send("X")
 

@@ -26,6 +26,16 @@ public:
   virtual void off (void) { digitalWrite(pin, LOW); }
   virtual bool is_on (void) { return (digitalRead(pin) == HIGH); }
   virtual void toggle (void) { if (is_on()) off(); else on(); }
+  virtual void strobe ()
+  {
+    if(is_on())
+    {
+      off(); _delay_ms(100); on();
+    } else 
+    {
+      on(); _delay_ms(100); off();
+    }
+  }
 
 public:
   uint8_t pin;

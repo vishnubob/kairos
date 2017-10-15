@@ -22,21 +22,29 @@ class BrightnessShim(object):
         cam = camera.KairosCamera(0)
         cam.remove_all()
 
-    def scan(self, value=127):
-        low = .05
-        high = .1
-        print(low, high)
+    def scan(self, value, count):
+        for x in range(count):
+            a = self[x + value]
+        pprint.pprint(self._cache)
+        return None
+
+    def bisect(self, value=254):
+        mid = 0.0613
+        low = mid - .01
+        high = mid + .03
+        print("High:", high, "Low:", low)
         sys.stdout.flush()
         low = int(round((16e6 / 256.0) * low))
         high = int(round((16e6 / 256.0) * high))
-        return bisect.bisect_left(self, value, lo=low, hi=high)
+        val = bisect.bisect_right(self, value, lo=low, hi=high)
+        pprint.pprint(self._cache)
+        return val
 
     def __getitem__(self, offset):
         if offset not in self._cache:
             self._cache[offset] = self.test(offset)[0]
-            print (offset, self._cache[offset])
+            print (offset, "%.6fms" % (offset / (16e6 / 256.0)), self._cache[offset])
             sys.stdout.flush()
-        pprint.pprint(self._cache)
         return self._cache[offset]
 
     def test(self, offset):
@@ -59,9 +67,10 @@ class BrightnessShim(object):
                 cam = None
                 print("failed to expose")
                 sys.stdout.flush()
-                time.sleep(5)
+                time.sleep(3)
 
 if __name__ == "__main__":
     bs = BrightnessShim()
-    val = bs.scan()
+    #bs.scan(3821, 20)
+    val = bs.bisect()
     print("tick", val)

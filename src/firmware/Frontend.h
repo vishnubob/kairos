@@ -49,6 +49,14 @@ public:
         case 'Z':
           val = 0;
           break;
+        case 'f':
+          control.focus.strobe();
+          Serial.println("OK");
+          break;
+        case 'x':
+          control.shutter.strobe();
+          Serial.println("OK");
+          break;
         case 'X':
           control.timer.start();
           Serial.println("OK");
@@ -87,6 +95,10 @@ public:
         case 'U':
           control.flash.off_time = val;
           val = 0;
+          Serial.println("OK");
+          break;
+        case 'K':
+          control.mirror_lockup = !control.mirror_lockup;
           Serial.println("OK");
           break;
         case 'P':

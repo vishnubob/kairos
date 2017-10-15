@@ -4,7 +4,7 @@
 #include "Arduino.h"
 #include "Device.h"
 
-static uint8_t _channel_pin_map[2] = {10, 9};
+static uint8_t _channel_pin_map[2] = {9, 10};
 
 class TimerDevice : public PinDevice
 {
@@ -52,6 +52,7 @@ public:
       cli();
       TCCR1A = TCCR1B = 0;
       TCNT1 = 0;
+      TIFR1 &= bit(OCF1A) & bit(OCF1B);
       sei();
   }
 
